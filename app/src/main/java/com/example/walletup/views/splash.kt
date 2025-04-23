@@ -1,5 +1,6 @@
 package com.example.walletup.views
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
@@ -21,7 +23,9 @@ import com.example.walletup.R
 
 @Composable
 
-fun SplashView (){
+fun SplashView (
+    onFinish: () -> Unit
+){
     Column (
         modifier = Modifier
             .fillMaxSize(),
@@ -34,9 +38,7 @@ fun SplashView (){
 
             modifier = Modifier
                 .size(300.dp)
-
         )
-
         Text (
             text =  "Tu nueva forma de ahorrar, más fácil que nunca!",
 
@@ -44,6 +46,11 @@ fun SplashView (){
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
         )
+    }
+
+    LaunchedEffect(Unit) {
+        Thread.sleep(3000)
+        onFinish()
     }
 }
 
