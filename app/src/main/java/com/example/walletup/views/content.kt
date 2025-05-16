@@ -3,8 +3,13 @@ package com.example.walletup.views
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MovableContent
@@ -13,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 
 @Composable
 
@@ -33,7 +39,6 @@ fun ContentTemplate (
     ){
 
         Column (
-
             modifier = Modifier
                 .fillMaxWidth()
                 .background(brush = Brush.verticalGradient(listOf(
@@ -44,14 +49,12 @@ fun ContentTemplate (
 
 
         ){
-
-            topBarContent ()
-
-
-
+            Spacer(modifier = Modifier.height(50.dp))
+            topBarContent()
+            Spacer(modifier = Modifier.height(20.dp))
         }
 
-        screenContent ()
+        screenContent()
     }
 
 }

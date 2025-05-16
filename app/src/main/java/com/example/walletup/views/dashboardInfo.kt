@@ -1,5 +1,6 @@
 package com.example.walletup.views
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,7 +22,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +44,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.walletup.R
+import com.example.walletup.models.TabItem
+import com.example.walletup.models.TransactionItem
+import com.example.walletup.viewmodels.DashboardViewModel
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -45,21 +65,50 @@ import java.util.Date
 
 @Composable
 
-fun DashboardInfoTemplate(){
+fun DashboardInfoTemplate(
+    viewModel: DashboardViewModel,
+    onNewTransaction: () -> Unit,
+    listaTransacciones: ArrayList<TransactionItem>
+){
+    val state = viewModel.state.collectAsState()
+
+    LaunchedEffect(state.value.listaTransaccionesFiltrada) {
+        viewModel.obtenerInformacionGrafico(state.value.periodoSeleccionado)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(20.dp))
-        UpperSection()
+        UpperSection(
+            gastos = state.value.gastos,
+            ingresos = state.value.ingresos,
+            tipo = state.value.gastoIngresoSeleccionado,
+            categoriesDistribution = state.value.categoriesDistribution,
+            onNewTransaction = onNewTransaction,
+            onTabChange = { indice ->
+                viewModel.actualizarInformacionGrafico(indice)
+            }
+        )
         Spacer(modifier = Modifier.height(40.dp))
-        TransactionSection()
+        TransactionSection(
+            listaTransacciones = listaTransacciones
+        )
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
-fun UpperSection() {
+fun UpperSection(
+    gastos: Double = 0.0,
+    ingresos: Double = 0.0,
+    tipo: Int = 0,
+    categoriesDistribution: ArrayList<MontoCategoria> = arrayListOf(),
+    onNewTransaction: () -> Unit,
+    onTabChange: (Int) -> Unit
+) {
     val tabItems = listOf(
         TabItem(
             id = 0,
@@ -93,6 +142,7 @@ fun UpperSection() {
             idSeleccionado = itemSeleccionado.intValue,
             onClick = { selected ->
                 itemSeleccionado.intValue = selected.id
+                onTabChange(itemSeleccionado.intValue)
             }
         )
         Text(
@@ -105,16 +155,23 @@ fun UpperSection() {
         ) {
             InfoGraph(
                 modifier = Modifier
-                    .align(Alignment.Center)
+                    .align(Alignment.Center),
+                categories = categoriesDistribution
             )
+            val monto = if (tipo == 0) gastos else ingresos
             Text(
                 modifier = Modifier
                     .align(Alignment.Center),
-                text = "$50"
+                text = (if (monto<0) "-" else (if (monto>0) "+" else "")) + "$" + String.format("%.2f", monto).replace("-", "")
             )
             Image(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd),
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .size(32.dp)
+                    .clickable {
+                        onNewTransaction()
+                    },
                 painter = painterResource(R.drawable.ic_add),
                 contentDescription = ""
             )
@@ -124,8 +181,10 @@ fun UpperSection() {
 
 @Composable
 fun InfoGraph(
-    modifier: Modifier
+    modifier: Modifier,
+    categories: ArrayList<MontoCategoria> = arrayListOf()
 ) {
+    var startAngle = -90f
     Canvas(
         modifier = modifier
             .width(200.dp)
@@ -133,18 +192,64 @@ fun InfoGraph(
             .padding(30.dp)
             .background(Color.White)
     ) {
-        drawArc(
-            color = Color.Red,
-            startAngle = 0f,
-            sweepAngle = 360f,
-            useCenter = true,
-            style = Stroke(
-                width = 60f,
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round
+        if (categories.isNotEmpty()) {
+            categories.forEach {
+                val porcentajeActual = it.porcentaje * 360
+                val color = when (it.categoria) {
+                    "Salud" -> {
+                        0xFFFF1A1A
+                    }
+                    "Transporte" -> {
+                        0xFF069F98
+                    }
+                    "Ocio" -> {
+                        0xFF4B069F
+                    }
+                    "Educación" -> {
+                        0xFFC357B5
+                    }
+                    "Casa" -> {
+                        0xFF88D030
+                    }
+                    "Alimantación" -> {
+                        0xFF06559F
+                    }
+                    "Salario" -> {
+                        0xFF1A36FF
+                    }
+                    "Otros" -> {
+                        0xFFFF941A
+                    }
+                    else -> {
+                        0xFF49454F
+                    }
+                }
+                drawArc(
+                    color = Color(color),
+                    startAngle = startAngle,
+                    sweepAngle = porcentajeActual.toFloat(),
+                    useCenter = false,
+                    style = Stroke(
+                        width = 60f,
+                        cap = StrokeCap.Square,
+                        join = StrokeJoin.Bevel
+                    )
+                )
+                startAngle += porcentajeActual.toFloat()
+            }
+        } else {
+            drawArc(
+                color = Color(0xFF5D5D5D),
+                startAngle = 0f,
+                sweepAngle = 360f,
+                useCenter = false,
+                style = Stroke(
+                    width = 60f,
+                    cap = StrokeCap.Square,
+                    join = StrokeJoin.Bevel
+                )
             )
-        )
-
+        }
     }
 }
 
@@ -187,329 +292,15 @@ fun TabBar(
 }
 
 @Composable
-fun TransactionSection() {
+fun TransactionSection(
+    listaTransacciones: ArrayList<TransactionItem>
+) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .fillMaxWidth(0.9f)
     ) {
-        val movimientos = listOf(
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Otros",
-                monto = 5.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            ),
-            TransactionItem(
-                id = "0",
-                cuenta = "",
-                categoria = "Salud",
-                monto = 43.99,
-                fecha = Date()
-            )
-        )
+        val movimientos = listaTransacciones
 
         Text(
             text = "Historia Transaccional",
@@ -544,7 +335,32 @@ fun TransactionList(
                     Image(
                         modifier = Modifier
                             .size(24.dp),
-                        painter = painterResource(R.drawable.ic_add),
+                        painter = painterResource(when(transaccion.categoria) {
+                            "Salario" -> {
+                                R.drawable.salario_icon
+                            }
+                            "Salud" -> {
+                                R.drawable.salud_icon
+                            }
+                            "Ocio" -> {
+                                R.drawable.ocio_icon
+                            }
+                            "Casa" -> {
+                                R.drawable.casa_icon
+                            }
+                            "Educación" -> {
+                                R.drawable.educacion_icon
+                            }
+                            "Comida" -> {
+                                R.drawable.alimentacion_icon
+                            }
+                            "Otros" -> {
+                                R.drawable.otros_icon
+                            }
+                            else -> {
+                                R.drawable.otros_icon
+                            }
+                        }),
                         contentDescription = ""
                     )
                     Spacer(modifier = Modifier.width(24.dp))
@@ -559,38 +375,10 @@ fun TransactionList(
                     fontWeight = FontWeight.SemiBold
                 )
             }
-
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
-
-@Composable
-@Preview(showSystemUi = true, showBackground = true)
-fun ContentDashboardInfo(){
-    Column(
-        modifier = Modifier
-            .background(Color(0xFFFBFBFB))
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        DashboardInfoTemplate()
-    }
-
-}
-
-data class TabItem(
-    var id: Int,
-    var titulo: String
-)
-
-data class TransactionItem(
-    var id: String,
-    var cuenta: String,
-    var categoria: String,
-    var monto: Double,
-    var fecha: Date
-)
 
 fun formatDate(idSelected: Int): String {
     val currentTime = Calendar.getInstance().time
@@ -613,3 +401,11 @@ fun formatDate(idSelected: Int): String {
         }
     }
 }
+
+
+data class MontoCategoria(
+    var categoria: String = String(),
+    var montoTotal: Double = 0.0,
+    var porcentaje: Double = 0.0,
+    var tipo: String = "G"
+)

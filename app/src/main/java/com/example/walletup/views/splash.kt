@@ -18,7 +18,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.walletup.R
+import com.example.walletup.viewmodels.SplashViewModel
 
 
 @Composable
@@ -26,6 +28,12 @@ import com.example.walletup.R
 fun SplashView (
     onFinish: () -> Unit
 ){
+    val viewModel: SplashViewModel = hiltViewModel()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadPreferences()
+    }
+
     Column (
         modifier = Modifier
             .fillMaxSize(),

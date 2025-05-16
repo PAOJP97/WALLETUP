@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    kotlin("kapt")
+    alias(libs.plugins.hilt.android)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -37,10 +40,6 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4" // asegurate que coincida con tus otras libs
-    }
-
 }
 
 dependencies {
@@ -60,4 +59,37 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Navigation & WorkManager
+    implementation("androidx.navigation:navigation-compose:2.8.9")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Vico Charts
+    implementation(libs.vico.compose)
+    implementation(libs.vico.views)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+    implementation(libs.hilt.navigation.compose)
+
+    // DataStore
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // Widget
+    // For Glance support
+    implementation("androidx.glance:glance:1.0.0-beta01")
+    // For AppWidgets support
+    implementation("androidx.glance:glance-appwidget:1.0.0-beta01")
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.0.1")
+}
+
+kapt {
+    correctErrorTypes = true
 }
