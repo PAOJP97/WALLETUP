@@ -76,6 +76,10 @@ fun DashboardInfoTemplate(
         viewModel.obtenerInformacionGrafico(state.value.periodoSeleccionado)
     }
 
+    LaunchedEffect(state.value.cuentaSeleccionada) {
+        viewModel.obtenerInformacionGrafico(state.value.periodoSeleccionado)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize(),

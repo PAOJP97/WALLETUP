@@ -9,6 +9,7 @@ import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
@@ -60,13 +61,38 @@ class AccountsViewModel @Inject constructor (
     }
 
     fun agregarCuenta(exito: () -> Unit) {
+        val monto = _state.value.saldoNuevaCuenta
+
         val cuenta: HashMap<String, Any> = hashMapOf(
             "nombre" to (_state.value.nombreNuevaCuenta),
-            "saldo" to (_state.value.saldoNuevaCuenta),
+            "saldo" to monto,
         )
 
         db.collection("Cuentas")
             .add(cuenta)
+            .addOnSuccessListener {
+                if (monto > 0) {
+                    agregarTransaccion(it.id, monto, exito)
+                } else {
+                    exito()
+                }
+            }
+            .addOnFailureListener {
+
+            }
+    }
+
+    fun agregarTransaccion(idCuenta: String, monto: Double, exito: () -> Unit) {
+        val transaccion: HashMap<String, Any> = hashMapOf(
+            "cuenta" to (idCuenta),
+            "monto" to (monto),
+            "tipo" to "I",
+            "categoria" to "Otros",
+            "fecha" to Date()
+        )
+
+        db.collection("Transacciones")
+            .add(transaccion)
             .addOnSuccessListener {
                 exito()
             }

@@ -222,9 +222,10 @@ fun AddAccountView(
                             colors = ButtonColors(
                                 containerColor = Color(0xFF004AAD),
                                 contentColor = Color(0xFF004AAD),
-                                disabledContentColor = Color.Black,
-                                disabledContainerColor = Color.Black
+                                disabledContentColor = Color.LightGray,
+                                disabledContainerColor = Color.LightGray
                             ),
+                            enabled = cuenta.value.isNotEmpty(),
                             onClick = {
                                 viewModel.agregarCuenta {
                                     onAddAccount()

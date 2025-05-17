@@ -290,9 +290,10 @@ fun TransactionFormTemplate(
                 colors = ButtonColors(
                     containerColor = Color(0xFF004AAD),
                     contentColor = Color(0xFF004AAD),
-                    disabledContentColor = Color.Black,
-                    disabledContainerColor = Color.Black
+                    disabledContentColor = Color.LightGray,
+                    disabledContainerColor = Color.LightGray
                 ),
+                enabled =(if (!monto.value.isNullOrBlank()) monto.value.toDouble() > 0 else false) && cuentaSeleccionada.value.isNotEmpty() && categoriaSeleccionada.value != -1,
                 onClick = {
                     viewModel.agregarTransaccion {
                         onAddTransaction()

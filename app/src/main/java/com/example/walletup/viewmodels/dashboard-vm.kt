@@ -29,11 +29,13 @@ class DashboardViewModel @Inject constructor (
         _state.value = DashboardState()
     }
 
+    var auxiliarMontoCuenta: Double = 0.0
+
     fun getCuentas() {
         db.collection("Cuentas")
             .get()
             .addOnSuccessListener { result ->
-                _state.value?.listaCuentas?.clear()
+                _state.value.listaCuentas?.clear()
                 val listaCuentas = result.map { cuenta ->
                     Cuenta(
                         id = cuenta.id,
@@ -56,7 +58,7 @@ class DashboardViewModel @Inject constructor (
         db.collection("Transacciones")
             .get()
             .addOnSuccessListener { result ->
-                _state.value?.listaTransacciones?.clear()
+                _state.value.listaTransacciones.clear()
                 val listaTransacciones = result.map { transaccion ->
                     TransactionItem(
                         id = transaccion.id,
@@ -111,6 +113,14 @@ class DashboardViewModel @Inject constructor (
     fun filtrarPorCuenta(): ArrayList<TransactionItem> {
         val cuentaSeleccionada = _state.value.cuentaSeleccionada
         val lista = _state.value.listaTransacciones
+        val listaCuentas = _state.value.listaCuentas
+        if (listaCuentas.isNotEmpty()) {
+            auxiliarMontoCuenta = if (cuentaSeleccionada == String()) {
+                listaCuentas.map { it.saldo }.reduce { ac, it -> ac + it }
+            } else {
+                listaCuentas.filter { it.id == cuentaSeleccionada }.map { it.saldo }.reduce { ac, it -> ac + it }
+            }
+        }
         return if (cuentaSeleccionada == String()) lista else ArrayList(lista.filter {
             it.cuenta == cuentaSeleccionada
         })
@@ -176,23 +186,30 @@ class DashboardViewModel @Inject constructor (
         calendar.add(Calendar.DATE, diasAtras)
         fechaInicio = calendar.time
 
-        val listaGastos = _state.value.listaTransacciones.filter {
-            it.tipoTransaccion == "G" && it.fecha.before(fechaFin) && it.fecha.after(fechaInicio)
-        }
-        var gastos: Double = if (listaGastos.isEmpty()) 0.0 else listaGastos.map{ it.monto }.reduce { total, monto -> total + monto}
+        val lista = if (_state.value.cuentaSeleccionada == String()) _state.value.listaTransacciones else _state.value.listaTransacciones.filter { it.idCuenta == _state.value.cuentaSeleccionada }
 
-        val listaIngresos = _state.value.listaTransacciones.filter {
-            it.tipoTransaccion == "I" && it.fecha.before(fechaFin) && it.fecha.after(fechaInicio)
-        }
-        var ingresos: Double = if (listaIngresos.isEmpty()) 0.0 else listaIngresos.map{ it.monto }.reduce { total, monto -> total + monto}
+        var gastos = obtenerMontoSegun(lista, "G", fechaInicio, fechaFin, true)
+        var ingresos = obtenerMontoSegun(lista, "I", fechaInicio, fechaFin, true)
 
         _state.value = _state.value.copy(
             gastos = gastos,
             ingresos = ingresos,
-            saldo = ingresos - gastos
+            saldo = ingresos - gastos,
+            saldoGlobal = obtenerMontoSegun(lista, "I", fechaInicio, fechaFin, false) - obtenerMontoSegun(lista, "G", fechaInicio, fechaFin, false)
         )
 
         obtenerInformacionGraficoVisual()
+    }
+
+    fun obtenerMontoSegun(referencia: List<TransactionItem>, tipo: String, fechaInicio: Date, fechaFin: Date, usarFechas: Boolean = false): Double {
+        val listaFiltrada = referencia.filter {
+            if (usarFechas) {
+                it.tipoTransaccion == tipo && it.fecha.before(fechaFin) && it.fecha.after(fechaInicio)
+            } else {
+                it.tipoTransaccion == tipo
+            }
+        }
+        return if (listaFiltrada.isEmpty()) 0.0 else listaFiltrada.map{ it.monto }.reduce { total, monto -> total + monto}
     }
 
     fun obtenerInformacionGraficoVisual() {

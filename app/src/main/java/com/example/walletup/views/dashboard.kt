@@ -132,7 +132,7 @@ fun DashboardView(
             Text(
                 modifier = Modifier
                     .fillMaxWidth(),
-                text = (if (state.value.saldo<0) "-" else (if (state.value.saldo>0) "+" else "")) + "$${state.value.saldo}".replace("-", ""),
+                text = (if (state.value.saldoGlobal<0) "-" else (if (state.value.saldoGlobal>0) "+" else "")) + "$${state.value.saldoGlobal}".replace("-", ""),
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(16.dp))

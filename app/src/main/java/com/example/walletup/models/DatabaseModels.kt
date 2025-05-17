@@ -6,7 +6,7 @@ data class Cuenta(
     var id: String,
     var numero: String,
     var nombre: String,
-    var saldo: Double? = 0.0
+    var saldo: Double = 0.0
 )
 
 data class Categoria(

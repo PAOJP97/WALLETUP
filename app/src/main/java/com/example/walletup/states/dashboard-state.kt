@@ -11,6 +11,7 @@ data class DashboardState(
     val gastos: Double = 0.0,
     val ingresos: Double = 0.0,
     val saldo: Double = 0.0,
+    val saldoGlobal: Double = 0.0,
     val cuentaSeleccionada: String = String(),
     val gastoIngresoSeleccionado: Int = 0, // 0 - Gastos
     val periodoSeleccionado: Int = 0, // 0 - Dia,

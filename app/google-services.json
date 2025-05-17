@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "290202216842",
-    "project_id": "walletup-3d6c7",
-    "storage_bucket": "walletup-3d6c7.firebasestorage.app"
+    "project_number": "536091896095",
+    "project_id": "walletup-231d6",
+    "storage_bucket": "walletup-231d6.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:290202216842:android:ef8a478d414bc2dde18073",
+        "mobilesdk_app_id": "1:536091896095:android:833c06733cedd3ec69e82a",
         "android_client_info": {
           "package_name": "com.example.walletup"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCWwLGV1W2yyGD8Q_xj0VXIrnjGrgJg0s4"
+          "current_key": "AIzaSyBaEgBWRWANBWOBWtpU9mLSjmCVdky1IdE"
         }
       ],
       "services": {

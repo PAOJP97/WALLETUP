@@ -190,9 +190,10 @@ fun AddBudgetView(
                             colors = ButtonColors(
                                 containerColor = Color(0xFF004AAD),
                                 contentColor = Color(0xFF004AAD),
-                                disabledContentColor = Color.Black,
-                                disabledContainerColor = Color.Black
+                                disabledContentColor = Color.LightGray,
+                                disabledContainerColor = Color.LightGray
                             ),
+                            enabled = nombre.value.isNotEmpty() && (if (!monto.value.isNullOrBlank()) monto.value.toDouble() > 0 else false),
                             onClick = {
                                 viewModel.agregarPresupuesto {
                                     onAddBudget()
